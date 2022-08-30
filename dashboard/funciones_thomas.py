@@ -5,6 +5,7 @@ Created on Mon Aug 29 17:22:54 2022
 @author: tscha
 """
 
+#Importar lo necesario para el codigo
 from urllib.request import urlopen
 import json
 with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
@@ -19,27 +20,29 @@ import numpy as np
 import pandas as pd
 from pywaffle import Waffle
 import matplotlib.pyplot as plt
+
+
 #%% Mapa mundo
 
-def get_map(data,categoria_4):   
+def get_map(data,categoria_4):   #Recibe categoria 4 para filtrar según lo que se entregue
     
-    df=data[data['Categoria 4']==categoria_4].dropna(subset=['Cantidad'])
+    df=data[data['Categoria 4']==categoria_4].dropna(subset=['Cantidad']) #aplica el filtro y quita los que no poseen valores en el indicador medido
     if categoria_4=='Acceso equitativo':
-        df['Cantidad']=df['Cantidad'].apply(lambda x: 100-float(x))
-    df['Cantidad']=df['Cantidad'].apply(lambda x: float(x))
-    df=df.rename(columns={'iso_a3':'CODE'})
+        df['Cantidad']=df['Cantidad'].apply(lambda x: 100-float(x)) #Se invierte el valor para acceso equitativo, ya que está la tasa de analfabetismo
+    df['Cantidad']=df['Cantidad'].apply(lambda x: float(x)) #En caos contrario, se toma el valor
+    df=df.rename(columns={'iso_a3':'CODE'}) #Se cambia el nombre, para que calce con lo que pedia el grafico
     
     
     fig = go.Figure(data=go.Choropleth(
-        locations = df['CODE'],
-        z = df['Cantidad'],
-        text = df['País'],
-        colorscale = 'Blues',
+        locations = df['CODE'], #Se ingresan los lugares
+        z = df['Cantidad'], #Se ingresan la tasa de cada cantidad
+        text = df['País'], #Se ingresa el texto flotante al pasar el mouse
+        colorscale = 'Blues', #Se elige la escala de colores. Se escogio azul para mostrar los valores positivos más claramente
         #autocolorscale=True,
         #reversescale=True,
-        marker_line_color='darkgray',
-        marker_line_width=0.5,
-        colorbar_title = 'Tasa de'+categoria_4,
+        marker_line_color='darkgray', #Separador de linea gris
+        marker_line_width=0.5, 
+        colorbar_title = 'Tasa de'+categoria_4, #titulo cambia según lo que se esté midiendo
     ))
     
     fig.update_layout(
@@ -55,7 +58,7 @@ def get_map(data,categoria_4):
 
 def get_bubble2(data):
     #Tabla 1
-    new_data=data[data['Categoria 4']=="Acceso equitativo"]
+    new_data=data[data['Categoria 4']=="Acceso equitativo"] #Siempre muestra tasa analfabetismo por categoria. Es lo más sencillo de comparar
     df=new_data[['País','Categoria 2','Cantidad','continent']]
     df['Cantidad']=df['Cantidad'].apply(lambda x: float(x))
     col_y='País'
@@ -74,15 +77,14 @@ def get_bubble2(data):
     return fig
 #%%
 def sumar_datos(data):
-    new_data=data[data['Categoria 4']=="Acceso equitativo"]
+    new_data=data[data['Categoria 4']=="Acceso equitativo"] #Se toma la categoria principal, que es la de analfabetismo
     #new_data=new_data[new_data['Categoria 3']=="Tasa de niños sin escolarizar"]
     
     categorias=["Un año antes de la edad de ingreso a la escuela primaria", "Educación primaria", "Primer ciclo de enseñanza secundaria", "Enseñanza secundaria superior"]
-    new_data_sumada=new_data[['País','continent']]
-    new_data_sumada
+    new_data_sumada=new_data[['País','continent']] #Se crea un dataframe con datos de pais y continente solamente
     
     
-    for cant in range(len(categorias)):
+    for cant in range(len(categorias)): #se recorre la matriz y se suman solo los de la categoria filtrada, dejando solo 1 vez cada país
         print(categorias[cant])
         new_data_1=new_data[new_data['Categoria 2']== categorias[cant]]
         new_data_1=new_data_1[['País','Cantidad']]
@@ -92,17 +94,15 @@ def sumar_datos(data):
         new_data_sumada=new_data_sumada.merge(new_data_1,how='left',on='País').drop_duplicates()
         
     new_data_sumada=new_data_sumada.dropna()
-    return new_data_sumada
+    return new_data_sumada #Se devuelve esta nueva matriz con 1 valor por país
 
 #%%
 def get_heat2(data,continente):
     
-    #continente='South America'
-    acceso_seleccionados=data[data.continent==continente]
-    #acceso_seleccionados=acceso_seleccionados_1.append(acceso_seleccionados_2)
-    acceso_seleccionados.index=acceso_seleccionados['País']
-    acceso_seleccionados=acceso_seleccionados.drop(columns=['País','continent'])
-    #Grafico de pregunta 1
+    acceso_seleccionados=data[data.continent==continente] #Se selecciona continente a comparar desde entrada de la función
+    acceso_seleccionados.index=acceso_seleccionados['País'] #Se pasa al indice los paises
+    acceso_seleccionados=acceso_seleccionados.drop(columns=['País','continent']) #Se deja solo el indice y un valor
+    #Se grafica cada país y su valor para cada categoria en el mapa de calor
     fig = px.imshow(acceso_seleccionados,
                     text_auto=True,
                     aspect='auto',
@@ -114,7 +114,7 @@ def get_heat2(data,continente):
     return fig
 
 #%% Nube de palabras
-
+#Fue comentada por problemas al pasar el código e instalación en poetry
 # def get_words(data):
 #     paises=data[data['Categoria 2']=='Tasa de alfabetización de jóvenes(15 a 24 años) (%)']
 #     paises=paises[['País','Cantidad']].drop_duplicates()
@@ -140,15 +140,15 @@ def get_heat2(data,continente):
 #%% Esperanza de vida
 def esperanza_vida(data,categoria):
     #Seleccionador categoria 3
-    df=data[data['Categoria 3']==categoria]
-    df=df[['País','Categoria 2','Cantidad','continent','lifeExp','pop_est']]
+    df=data[data['Categoria 3']==categoria] #Se le entrega una categoría
+    df=df[['País','Categoria 2','Cantidad','continent','lifeExp','pop_est']] #Se seleccionan los datos utiles
     
-    df['Cantidad']=df['Cantidad'].apply(lambda x: float(x))
-    df=df.rename(columns={'Cantidad':categoria,'lifeExp':'Esperanza de vida'})
+    df['Cantidad']=df['Cantidad'].apply(lambda x: float(x)) #se pasa la cantidad a flotante
+    df=df.rename(columns={'Cantidad':categoria,'lifeExp':'Esperanza de vida'}) #Se cambian los nombres de las variables para graficar
     
     col_y='Esperanza de vida'
     col_x=categoria
-    
+
     fig = px.scatter(df, 
                      x=col_x, y=col_y, 
                      #size='pop_est', 
@@ -197,11 +197,9 @@ def get_waffle2(data_sumada):
 #%% Comparador paises
 def get_comparador_paises(new_data_sumada,pais1,pais2):
     acceso_seleccionados=new_data_sumada.drop(columns=['continent'])
-    #pais1='Albania'
-    #pais2='Yemen'
-    acceso_seleccionados_1=acceso_seleccionados[acceso_seleccionados['País']==pais1]
-    acceso_seleccionados_2=acceso_seleccionados[acceso_seleccionados['País']==pais2]
-    acceso_seleccionados=acceso_seleccionados_1.append(acceso_seleccionados_2)
+    acceso_seleccionados_1=acceso_seleccionados[acceso_seleccionados['País']==pais1] #Se selecciona primer pais entregad
+    acceso_seleccionados_2=acceso_seleccionados[acceso_seleccionados['País']==pais2] #Se selecciona el segundo
+    acceso_seleccionados=acceso_seleccionados_1.append(acceso_seleccionados_2) #Se juntan ambos
     
     #Grafico de pregunta 1
     fig = px.bar(acceso_seleccionados,
